@@ -1,0 +1,19 @@
+apiVersion : apps/v1
+kind: Deployment
+metadata:
+  name: "deterministicruneaks-f71b"
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: "deterministicruneaks-f71b"
+  template:
+    metadata:
+      labels:
+        app: "deterministicruneaks-f71b"
+    spec:
+      containers:
+        - name: "deterministicruneaks-f71b"
+          image: "muninlabs.azurecr.io/deterministicruneaks"
+          ports:
+          - containerPort: 8081
