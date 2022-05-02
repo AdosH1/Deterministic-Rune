@@ -1,0 +1,50 @@
+on: [push]
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@master
+    
+    - uses: azure/docker-login@v1
+      with:
+        login-server: muninlabs.azurecr.io
+        username: ${{ secrets.acr_muninlabs_username }}
+        password: ${{ secrets.acr_muninlabs_password }}
+    
+    - name: Build and push image to ACR
+      id: build-image
+      run: |
+        docker build "$GITHUB_WORKSPACE/" -f  "Dockerfile" -t muninlabs.azurecr.io/deterministicruneaks:${{ github.sha }} --label dockerfile-path=Dockerfile
+        docker push muninlabs.azurecr.io/deterministicruneaks:${{ github.sha }}
+    
+    - uses: azure/k8s-set-context@v1
+      with:
+         kubeconfig: ${{ secrets.aks_deterministicruneaks_kubeConfig }}
+      id: login
+    
+    - name: Create namespace
+      run: |
+        namespacePresent=`kubectl get namespace | grep deterministic-rune-aks8fb0 | wc -l`
+        if [ $namespacePresent -eq 0 ]
+        then
+            echo `kubectl create namespace deterministic-rune-aks8fb0`
+        fi
+
+    - uses: azure/k8s-create-secret@v1
+      with:
+        namespace: deterministic-rune-aks8fb0
+        container-registry-url: muninlabs.azurecr.io
+        container-registry-username: ${{ secrets.acr_muninlabs_username }}
+        container-registry-password: ${{ secrets.acr_muninlabs_password }}
+        secret-name: deterministidockerauth
+       
+    - uses: azure/k8s-deploy@v1.2
+      with:
+        namespace: deterministic-rune-aks8fb0
+        manifests: |
+          manifests/deployment.yml
+          manifests/service.yml
+        images: |
+          muninlabs.azurecr.io/deterministicruneaks:${{ github.sha }}
+        imagepullsecrets: |
+          deterministidockerauth
