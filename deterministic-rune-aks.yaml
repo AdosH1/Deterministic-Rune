@@ -18,11 +18,10 @@ spec:
       labels:
         app: deterministic-rune
     spec:
+      nodeSelector:
+        "kubernetes.io/os": linux
       containers:
       - image: muninlabs.azurecr.io/deterministic-rune:v0.1
-        imagePullPolicy: IfNotPresent
         name: deterministic-rune
-        terminationMessagePath: /dev/termination-log
-        terminationMessagePolicy: File
         ports:
         - containerPort: 8081
